@@ -367,9 +367,7 @@ import javax.persistence.*;
     @NamedQuery(name = "Pnrcounts.findByPnrcountsDeparted",
     query = "SELECT p FROM Pnrcounts p WHERE p.pnrcountsDeparted = :pnrcountsDeparted"),
     @NamedQuery(name = "Pnrcounts.findByPnrcountsYearmonthday",
-    query = "SELECT p FROM Pnrcounts p WHERE p.pnrcountsYearmonthday = :pnrcountsYearmonthday"),
-    @NamedQuery(name = "Pnrcounts.findByPnrcountsVersion",
-    query = "SELECT p FROM Pnrcounts p WHERE p.pnrcountsVersion = :pnrcountsVersion")
+    query = "SELECT p FROM Pnrcounts p WHERE p.pnrcountsYearmonthday = :pnrcountsYearmonthday")
 })
 public class Pnrcounts implements Serializable {
 

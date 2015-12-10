@@ -10,12 +10,14 @@ import galileoclub.jpa.UrlsRoles;
 import galileoclub.jpa.UrlsRolesPK;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.deltaspike.jpa.api.transaction.Transactional;
 
 /**
  *
  * @author Samuel Franklyn
  */
 @Singleton
+@Transactional
 public class UrlsRolesDaoBean implements UrlsRolesDaoRemote {
 
     @Inject

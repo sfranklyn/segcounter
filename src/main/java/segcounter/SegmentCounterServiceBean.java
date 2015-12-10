@@ -48,7 +48,6 @@ import org.joda.time.format.DateTimeFormatter;
  *
  * @author Samuel Franklyn
  */
-
 @Singleton
 @Named("SegmentCounter")
 public class SegmentCounterServiceBean {
@@ -132,16 +131,16 @@ public class SegmentCounterServiceBean {
             DateTimeFormatter dtfdM = DateTimeFormat.forPattern("ddMMM");
             String dayStr = dtfdM.print(day).toUpperCase();
 
-            DateTime sixMonth = day.plusMonths(6);
-            String sixMonthStr = dtfdM.print(sixMonth).toUpperCase();
+            DateTime threeHundredThirty = day.plusDays(330);
+            String threeHundredThirtyStr = dtfdM.print(threeHundredThirty).toUpperCase();
 
             Map<String, Object> param = new HashMap<String, Object>();
 
             int maxRetry = 1;
             pnrsDaoRemote.updateNotActive();
             List pccsList = pccsDataModelRemote.getAll(PccsDataModelBean.SELECT_ALL, null, 0, -1);
+            suta.beginSession(Integer.MIN_VALUE);
             for (int idx = 0; idx < pccsList.size(); idx++) {
-                suta.beginSession(Integer.MIN_VALUE);
                 String res = terminalSubmit(suta, "SON/" + signOn);
                 if (res.contains("PASSWORD")) {
                     res = terminalSubmit(suta, "PASSWORD? " + password);
@@ -173,7 +172,7 @@ public class SegmentCounterServiceBean {
                 String pcc = pccs.getPccsPcc();
                 param.put("pnrsPcc", pcc);
                 terminalSubmit(suta, "SEM/" + pcc + "/AG");
-                res = terminalSubmit(suta, "LD/ALL/" + dayStr + "*" + sixMonthStr + "-D");
+                res = terminalSubmit(suta, "LD/ALL/" + dayStr + "*" + threeHundredThirtyStr + "-D");
                 String[] lines = linePattern.split(res);
                 while (lines != null) {
                     for (int idx1 = 0; idx1 < lines.length; idx1++) {
@@ -223,15 +222,15 @@ public class SegmentCounterServiceBean {
                         lines = null;
                     }
                 }
-                terminalSubmit(suta, "I");
-                terminalSubmit(suta, "SOF");
-                suta.endSession(Integer.MIN_VALUE + 1);
             }
+            terminalSubmit(suta, "I");
+            terminalSubmit(suta, "SOF");
+            suta.endSession(Integer.MIN_VALUE + 1);
 
             param = new HashMap<String, Object>();
             param.put("pnrsDeparted", daySql);
             List pnrsList = pnrsDataModelRemote.getAll(PnrsDataModelBean.SELECT_BY_ACTIVE, param, 0, -1);
-            ExecutorService es1 = Executors.newFixedThreadPool(5);
+            ExecutorService es1 = Executors.newFixedThreadPool(4);
             final int subListSize = 100;
             for (int idx = 0; idx < pnrsList.size(); idx = idx + subListSize) {
                 List pnrsSubList;
@@ -309,7 +308,6 @@ public class SegmentCounterServiceBean {
                 pnrBFRetrieveMods.getPNRAddrOrTargetCRSInfo().add(pnrAddr);
                 pnrAddr.setFileAddr("");
                 pnrAddr.setCodeCheck("");
-                Pnrcounts pnrcounts = new Pnrcounts();
                 for (int idx = 0; idx < pnrsSubList.size(); idx++) {
                     Pnrs pnrs = (Pnrs) pnrsSubList.get(idx);
                     String pcc = pnrs.getPnrsPcc();
@@ -371,6 +369,7 @@ public class SegmentCounterServiceBean {
                             Date pnrsCreated = new Date(pnrs.getPnrsCreated().getTime());
                             String createdYM = dtfYM.print(pnrsCreated.getTime());
                             if (createdYM.equals(dayYM)) {
+                                Pnrcounts pnrcounts = new Pnrcounts();
                                 pnrcounts.setPnrcountsCountdate(countDate.toDate());
                                 pnrcounts.setPnrcountsRecloc(recLoc);
                                 pnrcounts.setPnrcountsPcc(pcc);
@@ -400,6 +399,7 @@ public class SegmentCounterServiceBean {
                         }
                     } else {
                         if ((segCountNewCount != segCountOldCount) || (waitSegCountNewCount != waitSegCountOldCount)) {
+                            Pnrcounts pnrcounts = new Pnrcounts();
                             pnrcounts.setPnrcountsCountdate(countDate.toDate());
                             pnrcounts.setPnrcountsRecloc(recLoc);
                             pnrcounts.setPnrcountsPcc(pcc);

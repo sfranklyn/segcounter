@@ -14,6 +14,7 @@ import galileoclub.jpa.Users;
 import java.util.ArrayList;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.deltaspike.jpa.api.transaction.Transactional;
 import org.joda.time.DateTime;
 
 /**
@@ -21,6 +22,7 @@ import org.joda.time.DateTime;
  * @author Samuel Franklyn
  */
 @Singleton
+@Transactional
 public class UsersDaoBean implements UsersDaoRemote {
 
     @Inject

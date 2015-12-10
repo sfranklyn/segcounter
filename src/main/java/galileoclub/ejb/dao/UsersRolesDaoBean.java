@@ -10,12 +10,14 @@ import galileoclub.jpa.UsersRoles;
 import galileoclub.jpa.UsersRolesPK;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.deltaspike.jpa.api.transaction.Transactional;
 
 /**
  *
  * @author Samuel Franklyn
  */
 @Singleton
+@Transactional
 public class UsersRolesDaoBean implements UsersRolesDaoRemote {
 
     @Inject

@@ -9,12 +9,14 @@ import galileoclub.jpa.Claims;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.persistence.EntityManager;
+import org.apache.deltaspike.jpa.api.transaction.Transactional;
 
 /**
  *
  * @author Samuel Franklyn
  */
 @Singleton
+@Transactional
 public class ClaimsDaoBean {
 
     @Inject

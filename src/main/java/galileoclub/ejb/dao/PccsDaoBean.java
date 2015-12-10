@@ -10,14 +10,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
-import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
+import org.apache.deltaspike.jpa.api.transaction.Transactional;
 
 /**
  *
  * @author Samuel Franklyn
  */
 @Singleton
+@Transactional
 public class PccsDaoBean {
 
     @Inject
