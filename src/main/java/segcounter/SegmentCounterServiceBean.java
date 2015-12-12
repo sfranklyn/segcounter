@@ -35,6 +35,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.transform.stream.StreamSource;
@@ -54,6 +55,7 @@ public class SegmentCounterServiceBean {
 
     private static final Logger log = Logger.getLogger(SegmentCounterServiceBean.class.getName());
     private static final Pattern linePattern = Pattern.compile("\\r", Pattern.DOTALL | Pattern.MULTILINE);
+    private static final Pattern reclocPattern = Pattern.compile("^\\s+\\d+[.].*$");
     private static final String xmlHeader = "<PNRBFManagement_10>";
     private static final String soapHeader = "<PNRBFManagement_10 " + "xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' " + "xmlns='http://www.galileoindonesia.com/schema/PNR' " + "xsi:schemaLocation='http://www.galileoindonesia.com/schema/PNR " + "PNRBFManagement10.xsd'>";
     private static boolean debug = false;
@@ -134,7 +136,7 @@ public class SegmentCounterServiceBean {
             DateTime threeHundredThirty = day.plusDays(330);
             String threeHundredThirtyStr = dtfdM.print(threeHundredThirty).toUpperCase();
 
-            Map<String, Object> param = new HashMap<String, Object>();
+            Map<String, Object> param = new HashMap<>();
 
             int maxRetry = 1;
             pnrsDaoRemote.updateNotActive();
@@ -176,7 +178,7 @@ public class SegmentCounterServiceBean {
                 String[] lines = linePattern.split(res);
                 while (lines != null) {
                     for (int idx1 = 0; idx1 < lines.length; idx1++) {
-                        if (lines[idx1].matches("^\\s+\\d+[.].*$")) {
+                        if (reclocPattern.matcher(lines[idx1]).matches()) {
                             String recLoc = lines[idx1].substring(24, 30);
                             Pnrs pnrs = new Pnrs();
                             pnrs.setPnrsPcc(pcc);
@@ -227,11 +229,11 @@ public class SegmentCounterServiceBean {
             terminalSubmit(suta, "SOF");
             suta.endSession(Integer.MIN_VALUE + 1);
 
-            param = new HashMap<String, Object>();
+            param = new HashMap<>();
             param.put("pnrsDeparted", daySql);
             List pnrsList = pnrsDataModelRemote.getAll(PnrsDataModelBean.SELECT_BY_ACTIVE, param, 0, -1);
-            ExecutorService es1 = Executors.newFixedThreadPool(4);
-            final int subListSize = 100;
+            ExecutorService es1 = Executors.newFixedThreadPool(10);
+            final int subListSize = 5000;
             for (int idx = 0; idx < pnrsList.size(); idx = idx + subListSize) {
                 List pnrsSubList;
                 if ((idx + subListSize) < pnrsList.size()) {
@@ -277,10 +279,12 @@ public class SegmentCounterServiceBean {
 
     class CountSegment implements Runnable {
 
-        private List<Map> pnrsSubList;
-        private String signOn;
-        private String hcm;
-        private AtomicInteger pnrProcessed;
+        private final List<Map> pnrsSubList;
+        private final String signOn;
+        private final String hcm;
+        private final AtomicInteger pnrProcessed;
+        private Marshaller bookingMarshaller;
+        private Unmarshaller bookingUnmarshaller;
 
         public CountSegment(List<Map> pnrsSubList, String signOn, String hcm,
                 AtomicInteger pnrProcessed) {
@@ -288,6 +292,12 @@ public class SegmentCounterServiceBean {
             this.signOn = signOn;
             this.hcm = hcm;
             this.pnrProcessed = pnrProcessed;
+            try {
+                this.bookingMarshaller = bookingJc.createMarshaller();
+                this.bookingUnmarshaller = bookingJc.createUnmarshaller();
+            } catch (JAXBException ex) {
+                log.log(Level.SEVERE, null, ex);
+            }
         }
 
         @Override
@@ -297,8 +307,6 @@ public class SegmentCounterServiceBean {
             String result;
             String message;
             try {
-                Marshaller bookingMarshaller = bookingJc.createMarshaller();
-                Unmarshaller bookingUnmarshaller = bookingJc.createUnmarshaller();
                 suta = SutaFactory.createScriptableUniversalTransAgent();
                 suta.hcmName(hcm);
                 PNRBFManagement10 request = new PNRBFManagement10();
@@ -331,7 +339,7 @@ public class SegmentCounterServiceBean {
                                 if (obj.getClass().getSimpleName().equals("LNameInfo")) {
                                     LNameInfo lNameInfo = (LNameInfo) obj;
                                     if (!lNameInfo.getNameType().equals("I")) {
-                                        int numPsgrs = Integer.valueOf(lNameInfo.getNumPsgrs()).intValue();
+                                        int numPsgrs = Integer.parseInt(lNameInfo.getNumPsgrs());
                                         nameCount = nameCount + numPsgrs;
                                     }
                                 }
@@ -429,7 +437,7 @@ public class SegmentCounterServiceBean {
                     pnrsDaoRemote.update(pnrs);
                     pnrProcessed.getAndIncrement();
                 }
-            } catch (Exception ex) {
+            } catch (JAXBException | NumberFormatException ex) {
                 message = "GCLUB0001:" + ex.toString();
                 log.log(Level.SEVERE, message, ex);
             } finally {
@@ -491,7 +499,7 @@ public class SegmentCounterServiceBean {
         Integer pointYear = Integer.valueOf(yearMonth.substring(0, 4));
         Integer pointMonth = Integer.valueOf(yearMonth.substring(4, 6));
         pointsDaoRemote.deleteYearMonth(pointYear, pointMonth);
-        Map<String, Object> param = new HashMap<String, Object>();
+        Map<String, Object> param = new HashMap<>();
         param.put("pnrcountsYearMonth", yearMonth);
         List pnrCountsList = pnrcountsDataModelRemote.getAll(PnrcountsDataModelBean.SELECT_GROUP_BY_PCCSIGNON_BY_YEARMONTH, param, 0, -1);
         transferToPoint1(yearMonth, pnrCountsList);
